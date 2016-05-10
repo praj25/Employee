@@ -61,11 +61,7 @@ var getCertificationInfo = edge.func('sql', {
     parameter: "@emp_id"
 })
 
-var getDepartment = edge.func('sql', {
-    connectionString: connection,
-    source: "exec getDepartmentData",
-    parameter: "@dpt_id"
-});
+
 //------------Function to get List of Certifications-----------------//
 var getCertificationlist = edge.func('sql', {
     connectionString: connection,
@@ -136,6 +132,20 @@ var updatePersonalinfo = edge.func('sql', {
     parameter: "@doj",
     parameter: "@pf_no"
 })
+
+var addTeam = edge.func('sql', {
+    connectionString: connection,
+    source: 'exec addTeam',
+    parameter: "@team_name",
+    parameter: "@team_desc"
+})
+
+var getDepartment = edge.func('sql', {
+    connectionString: connection,
+    source: "exec getDepartmentData",
+    parameter: "@team_id"
+});
+
 app.post("/employee/insertQualification", function (req, res) {
     var emp_id = req.body.emp_id;
     var percentage = req.body.percentage;
@@ -176,6 +186,24 @@ app.post("/employee/insertCertification", function (req, res) {
     res.send("data");
 });
 //------------------End of function-----------------------------// 
+
+app.post("/employee/addteam", function(req, res){
+
+var team_name = req.body.team_name;
+var team_desc = req.body.team_desc;
+    console.log("description: " + team_desc)
+addTeam({ team_name: team_name, team_desc: team_desc }, function (error, result) {
+    if (error) { console.log(error); return; }
+    if (result) {
+        console.log();
+    }
+    else
+        console.log("No results");
+});
+res.send("data");
+
+})
+
 
 app.get("/employee/getcertificationUpdate/:id", function (req, res) {
     getCertificationInfo({ emp_id: req.param('id') }, function (error, result) {
@@ -327,38 +355,13 @@ app.del('/employee/deleteSalary/', function (req, res) {
 });
 
 //--------------------------------------------------------------------//
-app.get('/employee/departmentdata/:dpt_id', function (req, res) {
+app.get('/employee/departmentdata/:team_id', function (req, res) {
 //----------To get Department Data--------------------//
-getDepartment({ dpt_id: req.param('dpt_id') }, function (error, result) {
-        if (error) { console.log(error); return; }
-        if (result) {
-            try {
-                var department = [];
-                var employee = [];
-                for (i = 0; i < result.length; i++) {
-                    employee.push({
-                        'fname': result[i].fname,
-                        'lname' : result[i].lname,
-                        'email_id': result[i].email_id
-                    })
-              }
-                department.push({
-                    'department': result[0].dpt_name,
-                    'description': result[0].dpt_desc,
-                    'count' : result.length,
-                    'employee': employee
-                })
-             }
-            catch (err) {
-                console.log("result not found")
-                return;
-            }
-        }
-        else {
-            console.log("No results");
-        }
-        res.send(JSON.stringify(department))
+getDepartment({ team_id: req.param('team_id') }, function (error, result) {
+        
+        
     });
+    res.send(result);
 //-----------End of function---------------------------//   
 });
 
