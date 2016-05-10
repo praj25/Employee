@@ -217,9 +217,11 @@ app.get("/employee/getcertificationUpdate/:id", function (req, res) {
 })
 
 app.get("/employee/getqualificationUpdate/:id", function (req, res) {
+    
     getEmployeeQualification({ emp_id: req.param('id') }, function (error, result) {
         if (error) { console.log(error); return; }
         if (result) {
+
             res.send(result);
         }
         else
@@ -394,7 +396,13 @@ getEmployeeData({ emp_id: req.param('id') }, function (error, result) {
 getEmployeeQualification({ emp_id: req.param('id') }, function (error, result) {
         if (error) { console.log(error); return; }
         if (result) {
-            qualification = result;
+            for (i = 0; i < result.length; i++) {
+                qualification.push({
+                    "degree" : result[i].name,
+                    "percentage" : result[i].percentage
+                })
+            }
+           // qualification = result;
         }
         else
             console.log("No results");
@@ -417,7 +425,13 @@ getCompanyInfo({ emp_id: req.param('id') }, function (error, result) {
 getCertificationInfo({ emp_id: req.param('id') }, function (error, result) {
         if (error) { console.log(error); return; }
         if (result) {
-            certification = result;
+            for (i = 0; i < result.length; i++) {
+                certification.push({
+                    'certification': result[i].certification_name,
+                    'year': result[i].year
+                })
+            }
+           // certification = result;
         }
         else
             console.log("No results");
