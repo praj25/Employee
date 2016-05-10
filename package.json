@@ -1,0 +1,19 @@
+{
+  "name": "employee-api",
+  "version": "0.0.0",
+  "description": "employee-api",
+  "main": "server.js",
+  "author": {
+    "name": "sail",
+    "email": ""
+  },
+  "dependencies": {
+    "body-parser": "^1.15.0",
+    "cookie-parser": "^1.4.1",
+    "edge": "^5.0.0",
+    "edge-sql": "^0.1.2",
+    "express": "^4.13.4",
+    "express-session": "^1.13.0",
+    "mssql": "^3.0.1"
+  }
+}

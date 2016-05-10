@@ -1,0 +1,2 @@
+E:\sail\workspace\employee-api\obj\Debug\employee-api.njsprojResolveAssemblyReference.cache
+E:\sail\workspace\employee-api\bin\Microsoft.NodejsTools.WebRole.dll
