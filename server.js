@@ -100,6 +100,27 @@ var addQualificationInfo = edge.func('sql', {
     parameter: "@percentage"
 });
 
+var addSalary = edge.func('sql', {
+    connectionString: connection,
+    source: "exec addSalary",
+    parameter: "@emp_id",
+    parameter : "@salary",
+    parameter: "@leaves",
+    parameter: "@bonus",
+    parameter : "@post",
+    parameter: "@year"
+});
+var editSalary = edge.func('sql', {
+    connectionString: connection,
+    source: "exec updateCompanyInfo",
+    parameter: "@sr_no",
+    parameter : "@salary",
+    parameter: "@leaves",
+    parameter: "@bonus",
+    parameter : "@post",
+    parameter: "@year"
+});
+
 var removeCertification = edge.func('sql', {
     connectionString: connection,
     source: "exec deleteCertification",
@@ -138,6 +159,22 @@ var addTeam = edge.func('sql', {
     source: 'exec addTeam',
     parameter: "@team_name",
     parameter: "@team_desc"
+})
+
+
+var editTeam = edge.func('sql', {
+    connectionString: connection,
+    source: 'exec updateTeamInfo',
+    parameter: "@team_name",
+    parameter: "@team_description",
+    parameter: "@team_id"
+})
+
+
+var deleteTeam = edge.func('sql', {
+    connectionString: connection,
+    source: 'exec deleteTeam',
+    parameter: "@team_id",
 })
 
 var getDepartment = edge.func('sql', {
@@ -243,11 +280,32 @@ app.post("/employee/insertQualification", function (req, res) {
 })
 //-------------End Of Function-------------------------------------//
 
-app.post('/employe/updatePersonalInfo', function (req, res){
+app.put('/employee/updatePersonalInfo/:emp_id', function (req, res){
+    var fname = req.body.fname
+    var lname = req.body.lname
+    var mobile_no = req.body.fnmobile_noame
+    var email_id = req.body.email_id
+    var dob = req.body.dob
+    var address = req.body.address
+    var city = req.body.city
+    var state = req.body.state
+    var pincode = req.body.pincode
+    var country = req.body.country
+    var doj = req.body.doj
+    var pf_no = req.body.pf_no
     
-    console.log("in update function");
-    console.log(req.body);
+    updatePersonalinfo({ emp_id: emp_id, percentage: percentage, qualification_code: qualification_code }, function (error, result) {
+        if (error) { console.log(error); return; }
+        if (result) {
+            console.log();
+        }
+        else
+            console.log("No results");
+    });
     res.send("data");
+
+})
+ 
 })
 //---------------------To insert Certifications-------------------//
 app.post("/employee/insertCertification", function (req, res) {
@@ -265,8 +323,47 @@ app.post("/employee/insertCertification", function (req, res) {
     res.send("data");
 });
 //------------------End of function-----------------------------// 
+app.post("/employee/salary", function (req, res) {
+    var emp_id = req.body.emp_id;
+    var bonus = req.body.bonus;
+    var post = req.body.code;
+    var salary = req.body.salary;
+    var leaves = req.body.leaves;
+    var year = req.body.year;
+    addSalary({ emp_id: emp_id, year: year,bonus: bonus,post:post,salary:salary,leaves:leaves}, function (error, result) {
+        if (error) { console.log(error); return; }
+        if (result) console.log();
+        else console.log("No results");
+    });
+});
 
-app.post("/employee/addteam", function(req, res){
+app.put("/employee/salary/:sr_no", function (req, res) {
+    var sr_no = req.param("sr_no");
+    var bonus = req.body.bonus;
+    var post = req.body.code;
+    var salary = req.body.salary;
+    var leaves = req.body.leaves;
+    var year = req.body.year;
+    editSalary({ sr_no: sr_no, year: year, bonus: bonus, post: post, salary: salary, leaves: leaves }, function (error, result) {
+        if (error) { console.log(error); return; }
+        if (result) console.log();
+        else console.log("No results");
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+//--------------------------Team Functions--------------------//
+app.post("/employee/team", function(req, res){
 
 var team_name = req.body.team_name;
 var team_desc = req.body.team_desc;
@@ -283,6 +380,38 @@ res.send("data");
 
 })
 
+app.put("/employee/team/:team_id", function (req, res) {
+    
+    var team_name = req.body.team_name;
+    var team_desc = req.body.team_desc;
+    var team_id = req.param("team_id")
+
+    editTeam({ team_id: team_id, team_name: team_name, team_description: team_desc }, function (error, result) {
+        if (error) { console.log(error); return; }
+        if (result) {
+            console.log();
+        }
+        else
+            console.log("No results");
+    });
+    res.send("data");
+
+})
+
+app.del("/employee/team/:team_id", function (req, res) {
+    var team_id = req.param("team_id")
+    deleteTeam({ team_id: team_id}, function (error, result) {
+        if (error) { console.log(error); return; }
+        if (result) {
+            console.log();
+        }
+        else
+            console.log("No results");
+    });
+    res.send("data");
+
+})
+//-------------End Of TEam Functions-----------------------------//
 
 app.get("/employee/getcertificationUpdate/:id", function (req, res) {
     getCertificationInfo({ emp_id: req.param('id') }, function (error, result) {
@@ -311,8 +440,6 @@ app.get("/employee/getqualificationUpdate/:id", function (req, res) {
 
 
 
-
-//------------------------ Static ----------------------------------//
 app.post('/login', function (req, res) {
     
     var userData = [];
@@ -327,7 +454,7 @@ app.post('/login', function (req, res) {
             var isValid = authenticate(user, password, result);
             if (isValid != false) {
                 console.log("Match");
-                req.session.user = isValid.username;
+                req.session.user = isValid.emp_id;
                 if (isValid.user_type == "a")
                     req.session.user_type = "admin";
                 else if (isValid.user_type == "u")
@@ -495,7 +622,8 @@ getEmployeeQualification({ emp_id: req.param('id') }, function (error, result) {
             for (i = 0; i < result.length; i++) {
                 qualification.push({
                     "degree" : result[i].name,
-                    "percentage" : result[i].percentage
+                    "percentage" : result[i].percentage,
+                    'sr_no': result[i].sr_no
                 })
             }
            // qualification = result;
@@ -524,7 +652,8 @@ getCertificationInfo({ emp_id: req.param('id') }, function (error, result) {
             for (i = 0; i < result.length; i++) {
                 certification.push({
                     'certification': result[i].certification_name,
-                    'year': result[i].year
+                    'year': result[i].year,
+                    'sr_no': result[i].sr_no
                 })
             }
            // certification = result;
