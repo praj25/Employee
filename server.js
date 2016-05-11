@@ -146,6 +146,85 @@ var getDepartment = edge.func('sql', {
     parameter: "@team_id"
 });
 
+var getAllTeams = edge.func('sql', {
+    connectionString: connection,
+    source: "exec get_allTeams",
+});
+
+var deleteFromTeam = edge.func('sql', {
+    connectionString: connection,
+    source: "exec deleteEmpFromTeam",
+    parameter: "@teamid",
+    parameter: "@empid"
+});
+var deleteFromAllTeam = edge.func('sql', {
+    connectionString: connection,
+    source: "exec deleteEmployeeFromAllTeam",
+    parameter: "@emp_id"
+});
+
+
+
+ 
+
+
+//------------------------Get Request--------------------------//
+
+app.get("/employee/company", function(req, res){
+    getAllTeams(null, function (error, result){
+        if (error) { console.log(error); return; }
+        if (result) {
+            console.log();
+        }
+        else
+            console.log("No results");
+    
+        res.send(result);
+    })
+})
+
+
+//-----------------------Delete Request------------------------//
+
+
+app.del("/employee/employeedelete/", function (req, res) {
+
+    var emp_id = req.query['emp_id'];
+    
+    deleteFromAllTeam({ emp_id: emp_id }, function (error, result) {
+        if (error) { console.log(error); return; }
+        if (result) {
+            console.log();
+        }
+        else
+            console.log("No results");
+        
+        res.send(result);
+    })
+})
+
+
+
+//------------------------Post Request-------------------------//
+
+app.post("/employee/employeedelete/:emp_id", function(req, res){
+
+var team_id = req.body.team_id;
+var emp_id = req.param('emp_id');
+
+    deleteFromTeam({ teamid: team_id, empid: emp_id }, function (error,result) {
+        if (error) { console.log(error); return; }
+        if (result) {
+            console.log();
+        }
+        else
+            console.log("No results");
+        
+        res.send(result);
+    })
+})
+
+
 app.post("/employee/insertQualification", function (req, res) {
     var emp_id = req.body.emp_id;
     var percentage = req.body.percentage;
@@ -228,21 +307,38 @@ app.get("/employee/getqualificationUpdate/:id", function (req, res) {
             console.log("No results");
     });
 })
+
+
+
+
+
 //------------------------ Static ----------------------------------//
-app.get('/login', function (req, res) {
-//----------To create session--------------------//
-    var user = "IIT admin"
-    var password = "admin"
+app.post('/login', function (req, res) {
+    
+    var userData = [];
     console.log("in treeData")
+    var user = req.body.username;
+    var password = req.body.password;
+    console.log("User: " + user);
     getLoginData(null, function (error, result) {
         if (error)
             console.log(error);
         if (result) {
             var isValid = authenticate(user, password, result);
             if (isValid != false) {
+                console.log("Match");
                 req.session.user = isValid.username;
-                req.session.user_type = isValid.user_type;
-                res.send(req.session.user);
+                if (isValid.user_type == "a")
+                    req.session.user_type = "admin";
+                else if (isValid.user_type == "u")
+                    req.session.user_type = "user";
+              //  req.session.user_type = isValid.user_type;
+                userData.push({
+                    'isValid' : true,
+                    'user_id' : req.session.user ,
+                    'permission' : req.session.user_type
+                })
+                res.send(userData);
             }
             else
                 res.send("Invalid username or password");
@@ -253,11 +349,11 @@ app.get('/login', function (req, res) {
 })
 //--------------To authenticate user------------//
 function authenticate(username, password, userData) {
-    const encryptedPassword = crypto.createHmac('sha256', secret)
-                   .update(password)
-                   .digest('hex');
+
+    var encryptedPassword = crypto.createHash('md5').update(password).digest("hex");
+    console.log("encrypt: " + encryptedPassword);
     for (i = 0; i < userData.length; i++) {
-        if (encryptedPassword == userData[i].password)
+        if (encryptedPassword == userData[i].password && username == userData[i].username)
             return (userData[i])
     }
     return (false);
