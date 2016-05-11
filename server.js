@@ -281,31 +281,30 @@ app.post("/employee/insertQualification", function (req, res) {
 //-------------End Of Function-------------------------------------//
 
 app.put('/employee/updatePersonalInfo/:emp_id', function (req, res){
-    var fname = req.body.fname
-    var lname = req.body.lname
-    var mobile_no = req.body.fnmobile_noame
-    var email_id = req.body.email_id
-    var dob = req.body.dob
-    var address = req.body.address
-    var city = req.body.city
-    var state = req.body.state
-    var pincode = req.body.pincode
-    var country = req.body.country
-    var doj = req.body.doj
-    var pf_no = req.body.pf_no
-    
-    updatePersonalinfo({ emp_id: emp_id, percentage: percentage, qualification_code: qualification_code }, function (error, result) {
-        if (error) { console.log(error); return; }
-        if (result) {
-            console.log();
-        }
-        else
-            console.log("No results");
-    });
+
+    updatePersonalinfo({
+            fname : req.body.fname,
+            lname:req.body.lname,
+            mobile_no:req.body.fnmobile_noame,
+            email_id:req.body.email_id,
+            dob:req.body.dob,
+            address:req.body.address,
+            city:req.body.city,
+            state:req.body.state,
+            pincode:req.body.pincode,
+            country:req.body.country,
+            doj:req.body.doj,
+            pf_no:req.body.pf_no
+        },function (error, result) {
+            if (error) { console.log(error); return; }
+            if (result) {
+                console.log();
+            }
+            else
+                console.log("No results");
+        });
     res.send("data");
 
-})
- 
 })
 //---------------------To insert Certifications-------------------//
 app.post("/employee/insertCertification", function (req, res) {
