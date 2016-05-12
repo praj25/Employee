@@ -818,3 +818,77 @@ app.get('/', function (req, res) {
 app.listen(port, function () {
     console.log("Server listening at port " + port)
 });
+
+
+
+app.post("/employee/addEmployee", function (req, res) {
+    var fname = req.body.fname;
+    var lname = req.body.lname;
+    var mobile_no = 10000;
+    var email_id = req.body.email_id;
+    var gender = req.body.gender;
+    var dob = req.body.dob;
+    var address = req.body.address;
+    var city = req.body.city;
+    var state = req.body.state;
+    var pincode = 00000;
+    var country = req.body.country;
+    var doj = req.body.doj;
+    var pf_no = req.body.pf_no;
+    var user_type = req.body.user_type;
+    var emp_id = 1;
+    
+    
+    addEmployee({ fname: fname, lname: lname, mobile_no: mobile_no, email_id: email_id, gender: gender, dob: dob, address: address, city: city, state: state, pincode: pincode, country: country, doj: doj, pf_no: pf_no, user_type: user_type }, function (error, result) {
+        
+        if (error) { console.log(error); return; }
+        if (result) {
+            console.log();
+        }
+        else
+            console.log("No results");
+    });
+    res.send(emp_id);
+
+})
+
+function getEmpId(email_id) {
+    getEmpId({ email: email_id }, function (error, result) {
+        if (error) { console.log(error); return; }
+        if (result) {
+            return result;
+        }
+    });
+};
+
+
+
+
+
+
+
+var addEmployee = edge.func('sql', {
+    connectionString: connection,
+    source: 'exec addPersonalInfo',
+    
+    parameter: "@fname",
+    parameter: "@lname",
+    parameter: "@mobile_no",
+    parameter: "@email_id",
+    parameter: "@gender", 
+    parameter: "@dob",
+    parameter: "@address",
+    parameter: "@city", 
+    parameter: "@state", 
+    parameter: "@pincode",
+    parameter: "@country",
+    parameter: "@doj", 
+    parameter: "@pf_no",
+    parameter: "@user_type"
+})
+
+var getEmpId = edge.func('sql', {
+    connectionString: connection,
+    source: 'exec getUserId',
+    parameter: "@email",
+})
