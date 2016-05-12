@@ -29,11 +29,25 @@ app.use(session({ secret: '1234567890QWERTY' }));
 var getLoginData = edge.func('sql', {
     connectionString: connection,
     source: "exec login_data"
+}); 
+
+var getUserLoginData = edge.func('sql', {
+    connectionString: connection,
+    source: "exec get_userLoginData",
+    parameter: "@emp_id"
 });
+
+var updateUserLoginData = edge.func('sql', {
+    connectionString: connection,
+    source: "exec update_userLoginData",
+    parameter: "@emp_id",
+    parameter: "@password"
+});
+
 
 var getTree = edge.func('sql', {
     connectionString: connection,
-    source: 'exec get_treeData'
+    source: 'exec getTreeData'
 });
 
 var getEmployeeData = edge.func('sql', {
@@ -181,7 +195,7 @@ var deleteTeam = edge.func('sql', {
 
 var getDepartment = edge.func('sql', {
     connectionString: connection,
-    source: "exec getDepartmentData",
+    source: "exec getDepartmentDatav2",
     parameter: "@team_id"
 });
 
@@ -285,7 +299,6 @@ app.post("/employee/insertQualification", function (req, res) {
 app.put('/employee/updatePersonalInfo/:emp_id', function (req, res){
     
     var mobile_no = parseInt(req.body.mobile_no);
-    console.log(req.body.mobile_no + " " + mobile_no);
     updatePersonalinfo({
             emp_id:req.param("emp_id"),
             fname : req.body.fname,
@@ -478,6 +491,45 @@ app.post('/login', function (req, res) {
             console.log("No result");
     });
 })
+
+app.put('/login/:emp_id', function (req, res) {
+    
+    var userData = [];
+
+    var oldpass = req.body.oldPassword;
+    var newpass = req.body.newPassword;
+    var emp_id = req.param("emp_id");
+   
+    getUserLoginData({emp_id:emp_id}, function (error, result) {
+        if (error)
+            console.log(error);
+        if (result) {
+            var encryptedoldPassword = crypto.createHash('md5').update(oldpass).digest("hex");
+            var encryptednewPassword = crypto.createHash('md5').update(newpass).digest("hex");
+
+            if (encryptedoldPassword == result[0].password) {
+                updatePassword(emp_id, encryptednewPassword)
+                res.send(true);
+            }
+            else
+                res.send(false);
+            
+   
+        }
+        else
+            console.log("No result");
+    });
+})
+
+function updatePassword(emp_id, newPassword)
+{
+    //----update code;
+    updateUserLoginData({ emp_id: emp_id, password: newPassword }, function (error, result) {
+        if (error) console.log(error);
+        else if (result) console.log(result);
+    });
+}
+
 //--------------To authenticate user------------//
 function authenticate(username, password, userData) {
 
@@ -502,30 +554,32 @@ app.get('/employee/treedata', function (req, res) {
             var employee = [];
             var company = [];
             var result1 = {};
-            var group_id = result[0].dpt_id;
+            var group_id = result[0].team_id;
             for (i = 0; i < result.length; i++) {
-                var dpt_id = result[i].dpt_id;
-                var dpt_name = result[i].dpt_name;
-                if (group_id == result[i].dpt_id) {
+                var dpt_id = result[i].team_id;
+                var dpt_name = result[i].team_name;
+                if (group_id == result[i].team_id) {
                     employee = [];
-                    while (i < result.length && group_id == result[i].dpt_id) {
-                        employee.push({
-                            'id': result[i].emp_id,
-                            'name' : result[i].fname + " " + result[i].lname,
-                            'level' : 'emp'
-                        })
-                        i++;
+                    while (i < result.length && group_id == result[i].team_id) {
+                        if (result[i].emp_id != null) {
+                            employee.push({
+                                'id': result[i].emp_id,
+                                'name' : result[i].fname + " " + result[i].lname,
+                                'level' : 'emp'
+                            })
+                        }
+                       i++;
                     }
                 }
                 department.push({
-                    'id': dpt_id,
+                   'id': dpt_id,
                     'name': dpt_name,
                     'children' : employee,
                     'level': 'dpt'
                 })
                 if (i < result.length)
                 {
-                    group_id = result[i].dpt_id;
+                    group_id = result[i].team_id;
                     i--;
                 }
             }
@@ -535,21 +589,17 @@ app.get('/employee/treedata', function (req, res) {
                 'name': 'IIT',
                 'children': department
             })
+            res.send(company);
         }
 
         else
             console.log("No results");
-        res.send(JSON.stringify(company));
+       // res.send(JSON.stringify(company));
     });
 
 //-------------End of function------------------------//
 });
 
-
-app.get('/employee/tree_grid_data', function (req, res) { 
-//------------ ----------------- ------------//
-
-});
 //-------------End of function-------------//
 //---------------------- New delete functions---------------------------//
 app.del('/employee/deleteCertification/', function (req, res) {
@@ -585,12 +635,37 @@ app.del('/employee/deleteSalary/', function (req, res) {
 
 //--------------------------------------------------------------------//
 app.get('/employee/departmentdata/:team_id', function (req, res) {
-//----------To get Department Data--------------------//
-getDepartment({ team_id: req.param('team_id') }, function (error, result) {
-        
-        
-    });
-    res.send(result);
+    //----------To get Department Data--------------------//
+    var employee = [];
+    var department = [];
+    getDepartment({ team_id: req.param('team_id') }, function (error, result) {
+        if (error) console.log(error);
+        else if (result.length>0) {
+            var deptName = result[0].team_name;
+            var description = result[0].team_description;
+        //    var count = result.length;
+            for (i = 0; i < result.length; i++) {
+                if (result[i].email_id != null) {
+                    employee.push({
+                        'fname' : result[i].fname,
+                        'lname' : result[i].lname,
+                        'email_id' : result[i].email_id
+                    })
+                }
+            }
+            department.push({
+                'deptName': deptName,
+                'description': description,
+                'count': employee.length,
+                'employee' : employee
+            })
+
+            res.send(department)
+        }
+        else
+            res.send(department)
+        });
+
 //-----------End of function---------------------------//   
 });
 
@@ -601,10 +676,11 @@ app.get('/employee/employeedata/:id', function (req, res) {
     var company = [];
     var employee = [];
     var certification = [];
-    var empFlag = false, qualFlag = false, comFlag = false, certFlag=false;
+    var empFlag = false, qualFlag = false, comFlag = false, certFlag = false;
+    emp_id = parseInt(req.param('id'));
 
 //--------------TO get Employee Data---------------------------//
-getEmployeeData({ emp_id: req.param('id') }, function (error, result) {
+getEmployeeData({ emp_id: emp_id }, function (error, result) {
         if (error) { console.log(error); return; }
         if (result) {
           /* date = result[0].dob.split(" ")
@@ -620,7 +696,7 @@ getEmployeeData({ emp_id: req.param('id') }, function (error, result) {
     });
 
 //------------- To get Employee Qualification----------------//
-getEmployeeQualification({ emp_id: req.param('id') }, function (error, result) {
+getEmployeeQualification({ emp_id: emp_id }, function (error, result) {
         if (error) { console.log(error); return; }
         if (result) {
             for (i = 0; i < result.length; i++) {
@@ -639,7 +715,7 @@ getEmployeeQualification({ emp_id: req.param('id') }, function (error, result) {
     });
 
 //-------------To get Employee Company Details--------------//
-getCompanyInfo({ emp_id: req.param('id') }, function (error, result) {
+getCompanyInfo({ emp_id: emp_id }, function (error, result) {
         if (error) { console.log(error); return; }
         if (result) {
             company = result;
@@ -650,7 +726,7 @@ getCompanyInfo({ emp_id: req.param('id') }, function (error, result) {
         sendData();
     });
 //-------------To get Employee Certification Details--------------//
-getCertificationInfo({ emp_id: req.param('id') }, function (error, result) {
+getCertificationInfo({ emp_id: emp_id }, function (error, result) {
         if (error) { console.log(error); return; }
         if (result) {
             for (i = 0; i < result.length; i++) {
