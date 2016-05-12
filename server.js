@@ -643,7 +643,6 @@ app.get('/employee/departmentdata/:team_id', function (req, res) {
         else if (result.length>0) {
             var deptName = result[0].team_name;
             var description = result[0].team_description;
-        //    var count = result.length;
             for (i = 0; i < result.length; i++) {
                 if (result[i].email_id != null) {
                     employee.push({
