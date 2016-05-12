@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const secret = 'abcdefg';
 qs = require('querystring');
 
+
 app.use(function (req, res, next) {
     
     res.header('Access-Control-Allow-Origin', "*");
@@ -140,6 +141,7 @@ var removeSalary = edge.func('sql', {
 var updatePersonalinfo = edge.func('sql', {
     connectionString: connection,
     source: 'exec updatePersonalInfo',
+    parameter: "@emp_id",
     parameter: "@fname",
     parameter: "@lname",
     parameter: "@mobile_no",
@@ -281,17 +283,20 @@ app.post("/employee/insertQualification", function (req, res) {
 //-------------End Of Function-------------------------------------//
 
 app.put('/employee/updatePersonalInfo/:emp_id', function (req, res){
-
+    
+    var mobile_no = parseInt(req.body.mobile_no);
+    console.log(req.body.mobile_no + " " + mobile_no);
     updatePersonalinfo({
+            emp_id:req.param("emp_id"),
             fname : req.body.fname,
             lname:req.body.lname,
-            mobile_no:req.body.fnmobile_noame,
+            mobile_no: mobile_no,
             email_id:req.body.email_id,
             dob:req.body.dob,
             address:req.body.address,
             city:req.body.city,
             state:req.body.state,
-            pincode:req.body.pincode,
+            pincode:0456,
             country:req.body.country,
             doj:req.body.doj,
             pf_no:req.body.pf_no
