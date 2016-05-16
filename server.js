@@ -11,7 +11,6 @@ qs = require('querystring');
 
 
 app.use(function (req, res, next) {
-    
     res.header('Access-Control-Allow-Origin', "*");
     res.header('Access-Control-Allow-Methods', 'GET,OPTIONS,POST,DELETE,PUT');
     res.header('Access-Control-Allow-Headers', 'Content-Type,Origin, X-Requested-With, Accept');
@@ -50,6 +49,11 @@ var getTree = edge.func('sql', {
     source: 'exec getTreeData'
 });
 
+var getEmailList = edge.func('sql', {
+    connectionString: connection,
+    source: 'exec getEmailList'
+});
+
 var getEmployeeData = edge.func('sql', {
     connectionString: connection,
     source: "exec get_employee_info", 
@@ -76,6 +80,17 @@ var getCertificationInfo = edge.func('sql', {
     parameter: "@emp_id"
 })
 
+var getEmployeeTeam = edge.func('sql', {
+    connectionString: connection,
+    source: "exec getEmployeeTeam",
+    parameter: "@emp_id"
+})
+
+var getTeamList = edge.func('sql', {
+    connectionString: connection,
+    source: "exec getTeamList",
+})
+
 
 //------------Function to get List of Certifications-----------------//
 var getCertificationlist = edge.func('sql', {
@@ -98,6 +113,38 @@ var getGenderCodeList = edge.func('sql',{
     source: 'exec getGenderCodes'
 })
 
+var getEmpId = edge.func('sql', {
+    connectionString: connection,
+    source: 'exec getUserId',
+    parameter: "@email",
+})
+
+
+var addEmployee = edge.func('sql', {
+    connectionString: connection,
+    source: 'exec addPersonalInfo', 
+    parameter: "@fname",
+    parameter: "@lname",
+    parameter: "@mobile_no",
+    parameter: "@email_id",
+    parameter: "@gender", 
+    parameter: "@dob",
+    parameter: "@address",
+    parameter: "@city", 
+    parameter: "@state", 
+    parameter: "@pincode",
+    parameter: "@country",
+    parameter: "@doj", 
+    parameter: "@pf_no",
+    parameter: "@user_type"
+})
+
+var addEmployeeTeam = edge.func('sql', {
+    connectionString: connection,
+    source: 'exec addEmployeeTeam', 
+    parameter: "@emp_id",
+    parameter: "@team_id",
+})
 
 var addCertificationInfo = edge.func('sql', {
     connectionString: connection,
@@ -216,7 +263,11 @@ var deleteFromAllTeam = edge.func('sql', {
     parameter: "@emp_id"
 });
 
-
+var deleteEmployeeTeam = edge.func('sql', {
+    connectionString: connection,
+    source: "exec deleteEmployeeTeam",
+    parameter: "@emp_id"
+});
 
  
 
@@ -299,6 +350,7 @@ app.post("/employee/insertQualification", function (req, res) {
 app.put('/employee/updatePersonalInfo/:emp_id', function (req, res){
     
     var mobile_no = parseInt(req.body.mobile_no);
+    var team_list = req.body.teamList;
     updatePersonalinfo({
             emp_id:req.param("emp_id"),
             fname : req.body.fname,
@@ -309,20 +361,22 @@ app.put('/employee/updatePersonalInfo/:emp_id', function (req, res){
             address:req.body.address,
             city:req.body.city,
             state:req.body.state,
-            pincode:0456,
+            pincode: req.body.pincode,
             country:req.body.country,
             doj:req.body.doj,
             pf_no:req.body.pf_no
         },function (error, result) {
             if (error) { console.log(error); return; }
-            if (result) {
-                console.log();
+        if (result) {
+            deleteTeams(req.param("emp_id"));
+                for (i = 0; i < team_list.length; i++) {
+                addTeams(req.param("emp_id"), team_list[i]);
             }
+            res.send();
+         }
             else
                 console.log("No results");
         });
-    res.send("data");
-
 })
 //---------------------To insert Certifications-------------------//
 app.post("/employee/insertCertification", function (req, res) {
@@ -370,16 +424,21 @@ app.put("/employee/salary/:sr_no", function (req, res) {
 
 
 
-
-
-
-
-
-
-
-
-
 //--------------------------Team Functions--------------------//
+app.get("/employee/team", function (req, res) {
+
+    getTeamList(null, function (error, result) {
+        if (error) { console.log(error); return; }
+        if (result) {
+            res.send(result);
+        }
+        else
+            console.log("No results");
+    });
+    
+
+})
+
 app.post("/employee/team", function(req, res){
 
 var team_name = req.body.team_name;
@@ -430,6 +489,20 @@ app.del("/employee/team/:team_id", function (req, res) {
 })
 //-------------End Of TEam Functions-----------------------------//
 
+
+
+
+app.get("/employee/getemaillist", function (req, res) {
+    getEmailList(null, function (error, result) {
+        if (error) { console.log(error); return; }
+        if (result) {
+            res.send(result);
+        }
+        else
+            console.log("No results");
+    });
+})
+
 app.get("/employee/getcertificationUpdate/:id", function (req, res) {
     getCertificationInfo({ emp_id: req.param('id') }, function (error, result) {
         if (error) { console.log(error); return; }
@@ -453,8 +526,6 @@ app.get("/employee/getqualificationUpdate/:id", function (req, res) {
             console.log("No results");
     });
 })
-
-
 
 
 app.post('/login', function (req, res) {
@@ -671,21 +742,18 @@ app.get('/employee/departmentdata/:team_id', function (req, res) {
 app.get('/employee/employeedata/:id', function (req, res) {
      
     var personal = [];
+    var team = [];
     var qualification = [];
     var company = [];
     var employee = [];
     var certification = [];
-    var empFlag = false, qualFlag = false, comFlag = false, certFlag = false;
+    var empFlag = false, qualFlag = false, comFlag = false, certFlag = false, teamFlag = false;
     emp_id = parseInt(req.param('id'));
 
 //--------------TO get Employee Data---------------------------//
 getEmployeeData({ emp_id: emp_id }, function (error, result) {
         if (error) { console.log(error); return; }
         if (result) {
-          /* date = result[0].dob.split(" ")
-           result[0].dob = date[0];
-            date = result[0].doj.split(" ")
-            result[0].doj = date[0];*/
             personal = result;
         }
         else
@@ -694,6 +762,16 @@ getEmployeeData({ emp_id: emp_id }, function (error, result) {
         sendData();
     });
 
+getEmployeeTeam({ emp_id: emp_id }, function (error, result) {
+        if (error) { console.log(error); return; }
+        if (result) {
+            team = result;
+        }
+        else
+            console.log("No results");
+        teamFlag = true;
+        sendData();
+    });
 //------------- To get Employee Qualification----------------//
 getEmployeeQualification({ emp_id: emp_id }, function (error, result) {
         if (error) { console.log(error); return; }
@@ -705,7 +783,6 @@ getEmployeeQualification({ emp_id: emp_id }, function (error, result) {
                     'sr_no': result[i].sr_no
                 })
             }
-           // qualification = result;
         }
         else
             console.log("No results");
@@ -745,12 +822,13 @@ getCertificationInfo({ emp_id: emp_id }, function (error, result) {
 
 function sendData()
 {
-        if (empFlag && qualFlag && comFlag && certFlag) {
+        if (empFlag && qualFlag && comFlag && certFlag && teamFlag) {
             employee.push({
                 'personal' : personal,
                 'qualification': qualification,
                 'company' : company,
-                'certification' : certification
+                'certification' : certification,
+                'team':team
             })
             console.log(employee);
             res.send(employee);
@@ -814,13 +892,9 @@ app.get('/', function (req, res) {
     res.end("Welcome");
 });
 
-app.listen(port, function () {
-    console.log("Server listening at port " + port)
-});
-
-
 
 app.post("/employee/addEmployee", function (req, res) {
+
     var fname = req.body.fname;
     var lname = req.body.lname;
     var mobile_no = 10000;
@@ -830,64 +904,69 @@ app.post("/employee/addEmployee", function (req, res) {
     var address = req.body.address;
     var city = req.body.city;
     var state = req.body.state;
-    var pincode = 00000;
+    var pincode = req.body.pincode;
     var country = req.body.country;
     var doj = req.body.doj;
     var pf_no = req.body.pf_no;
+    var team_list = req.body.teamList;
     var user_type = req.body.user_type;
-    var emp_id = 1;
-    
-    
-    addEmployee({ fname: fname, lname: lname, mobile_no: mobile_no, email_id: email_id, gender: gender, dob: dob, address: address, city: city, state: state, pincode: pincode, country: country, doj: doj, pf_no: pf_no, user_type: user_type }, function (error, result) {
-        
-        if (error) { console.log(error); return; }
-        if (result) {
-            console.log();
-        }
-        else
-            console.log("No results");
-    });
-    res.send(emp_id);
 
-})
 
-function getEmpId(email_id) {
-    getEmpId({ email: email_id }, function (error, result) {
+    addEmployee({ fname: fname, lname: lname, mobile_no: mobile_no, email_id: email_id, gender: gender, dob: dob, address: address, city: city, state: state, pincode: pincode, country: country, doj: doj, pf_no: pf_no, user_type: user_type }, function (error, result) { 
         if (error) { console.log(error); return; }
-        if (result) {
-            return result;
+        else if (result) {
+            getEmpId({ email: email_id }, function (error, result) {
+                if (error) { console.log(error); return; }
+                if (result) {
+                    for (i = 0; i < team_list.length; i++) {
+                        addTeams(result[0].emp_id, team_list[i])
+                    }
+                    res.send(result);
+                }
+            });
         }
     });
-};
-
-
-
-
-
-
-
-var addEmployee = edge.func('sql', {
-    connectionString: connection,
-    source: 'exec addPersonalInfo',
-    
-    parameter: "@fname",
-    parameter: "@lname",
-    parameter: "@mobile_no",
-    parameter: "@email_id",
-    parameter: "@gender", 
-    parameter: "@dob",
-    parameter: "@address",
-    parameter: "@city", 
-    parameter: "@state", 
-    parameter: "@pincode",
-    parameter: "@country",
-    parameter: "@doj", 
-    parameter: "@pf_no",
-    parameter: "@user_type"
 })
 
-var getEmpId = edge.func('sql', {
-    connectionString: connection,
-    source: 'exec getUserId',
-    parameter: "@email",
-})
+
+function deleteTeams(emp_id)
+{
+    console.log(emp_id)
+    deleteEmployeeTeam({ emp_id: emp_id }, function (error, result){
+        console.log("deleting............." +error);
+    })
+}
+
+function addTeams(emp_id, team_id)
+{
+    addEmployeeTeam({ emp_id: emp_id, team_id: team_id }, function (error, result) { 
+        console.log("adding......");
+    })
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.listen(port, function () {
+    console.log("Server listening at port " + port)
+});
+
+
